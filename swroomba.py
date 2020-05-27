@@ -41,11 +41,10 @@ def wait(secs = 0.015):
     time.sleep(secs)
 
 def get_bytes(number, length):
-    if number >= 0:
-        return number.to_bytes(length, 'big')
-    else: # two's complement (or whatever)
-        mask = int('11111111' * length, 2) # get your mask because covid 19
-        return (((number * -1) ^ mask) + 1).to_bytes(length, 'big') # sick maths bro
+    return number.to_bytes(length, byteorder='big', signed=True)
+
+def get_int(bytes):
+    return int.from_bytes(bytes, byteorder='big', signed=True)
 
 def command(ser : serial.Serial, op_code, data_bytes = b''):
     cmd_bytes = get_bytes(op_code, 1) + data_bytes
@@ -59,12 +58,12 @@ def query_one(ser : serial.Serial, packet_id, read_size):
 
 def get_mode(ser : serial.Serial):
     mode_bytes = query_one(ser, PACKET_MODE, 1)
-    mode = int.from_bytes(mode_bytes, 'big')
+    mode = get_int(mode_bytes)
     print("mode:" + str(mode))
     return mode
 
 def get_bump(ser : serial.Serial):
-    packet_data = int.from_bytes(query_one(ser, PACKET_BUMPS, 1), 'big')
+    packet_data = get_int(query_one(ser, PACKET_BUMPS, 1))
     print("bump:" + str(packet_data))
     if packet_data & Bump.Both == Bump.Both:
         return Bump.Both
@@ -84,7 +83,7 @@ def stop(ser : serial.Serial):
     drive(ser, 0, 0, 0)
 
 def back_up(ser : serial.Serial):
-    drive(ser, randint(-400, -200), 32767, 0.5)
+    drive(ser, -300, 32767, 0.5)
 
 def turn_left_rand(ser : serial.Serial):
     drive(ser, randint(150, 300), Turn.CounterClockwise, rand(0.5, 2))
@@ -104,6 +103,7 @@ def open_serial():
 
 def main():
     pygame.mixer.init()
+    pygame.mixer.music.set_volume(1.0)
     pains = glob.glob(AUDIO_DIR + '/*.mp3')
 
     ser = open_serial()
@@ -124,7 +124,7 @@ def main():
         wait(0.3)
 
         mode = get_mode(ser)
-        speed = 300
+        speed = 400
         while mode == MODE_SAFE:
             bump = get_bump(ser)
             if bump != Bump.Nope:
@@ -138,7 +138,7 @@ def main():
                 else: # randomly turn right twice, because I am too lazy to figure out, how long I'd have to let roomba turn until it turns around 180 degrees xD
                     turn_right_rand(ser)
                     turn_right_rand(ser)
-                speed = randint(200, 400) # update speed after bump for a bit of randomness lol
+                # speed = randint(350, 500) # update speed after bump for a bit of randomness lol
             
             drive(ser, speed, 32767, 0)
 

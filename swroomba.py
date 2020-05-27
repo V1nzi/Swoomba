@@ -40,14 +40,14 @@ def rand(min, max):
 def wait(secs = 0.015):
     time.sleep(secs)
 
-def get_bytes(number, length):
-    return number.to_bytes(length, byteorder='big', signed=True)
+def get_bytes(number, length, signed=True):
+    return number.to_bytes(length, byteorder='big', signed=signed)
 
 def get_int(bytes):
     return int.from_bytes(bytes, byteorder='big', signed=True)
 
 def command(ser : serial.Serial, op_code, data_bytes = b''):
-    cmd_bytes = get_bytes(op_code, 1) + data_bytes
+    cmd_bytes = get_bytes(op_code, 1, signed=False) + data_bytes
     print(list(cmd_bytes))
     ser.write(cmd_bytes)
     wait()
